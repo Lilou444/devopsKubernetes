@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: wordpressfront
+ labels: 
+  name: wordpressfront
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: mysqlback
+ labels:
+  name: mysqlback

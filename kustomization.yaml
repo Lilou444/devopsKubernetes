@@ -1,0 +1,8 @@
+secretGenerator:
+- name: mysql-pass
+  literals:
+  - password=YOUR_PASSWORD
+resources:
+- mysql-deployment-kubedb.yaml
+- wordpress-deployment.yaml
+- namespace.yaml

@@ -17,7 +17,7 @@ apiVersion: kubedb.com/v1alpha1
 kind: MySQL
 metadata:
  name: wp-sql
- namespace: mysqlback
+ namespace: backend
  labels:
   app: wordpress
 context:
@@ -75,3 +75,27 @@ spec:
     persistentVolumeClaim:
       claimName: my-snap-pvc
 ---
+
+apiVersion: kubedb.com/v1alpha1
+kind: MySQL
+metadata:
+  name: mysql-wordpress 
+  namespace: mysqlback
+spec:
+  version: "8.0-v2"
+  replicas: 3
+  topology:
+    mode: GroupReplication
+    name: "dc002fc3-c412-4d18-b1d4-66c1fbfbbc9b"
+    baseServerID: 100
+  databaseSecret:
+   secretName: m1-auth
+  storageType: Durable
+  storage:
+    storageClassName: "standard"
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 5Gi
+  terminationPolicy: WipeOut

@@ -3,6 +3,7 @@ secretGenerator:
   literals:
   - password=YOUR_PASSWORD
 resources:
+- namespace.yaml
 - mysql-deployment-kubedb.yaml
 - wordpress-deployment.yaml
-- namespace.yaml
+

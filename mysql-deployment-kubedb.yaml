@@ -1,21 +1,8 @@
 apiVersion: v1
-kind: Service
-metadata:
-  name: wordpress-mysql
-  labels:
-    app: wordpress
-spec:
-  ports:
-    - port: 3306
-  selector:
-    app: wordpress
-    tier: mysql
-  clusterIP: None
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mysql-pv-claim
+  name: mysql-storage-snap
+  namespace: mysqlback
   labels:
     app: wordpress
 spec:
@@ -23,43 +10,68 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 20Gi
+      storage: 10Gi
+
 ---
-apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
-kind: Deployment
+apiVersion: kubedb.com/v1alpha1
+kind: MySQL
 metadata:
-  name: wordpress-mysql
-  labels:
-    app: wordpress
+ name: wp-sql
+ namespace: mysqlback
+ labels:
+  app: wordpress
+context:
+ name: wp-sql
+ namespace: wordpress
 spec:
-  selector:
-    matchLabels:
-      app: wordpress
-      tier: mysql
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: wordpress
-        tier: mysql
+  version: "8.0-v2"
+  topology:
+   mode: GroupReplication
+  databaseSecret:
+    secretName: m1-auth
+  storageType: "Durable"
+  storage:
+   storageClassName: "standard"
+   accessModes:
+   - ReadWriteOnce
+   volumeMode: Filesystem
+   resources:
+    requests:
+     storage: 5Gi
+  backupSchedule:
+   cronExpression: "@every 2m"
+   storageSecretName: ms-snap-secret
+  podTemplate:
+    annotations:
+      passMe: ToDatabasePod
+    controller:
+      annotations:
+        passMe: ToStatefulSet    
     spec:
-      containers:
-      - image: mysql:5.6
+      image: mysql:5.6
+      name: mysql
+      env: 
+      - name: MYSQL_DATABASE
+        value: myDB
+  serviceTemplate:
+    annotations:
+      passMe: ToService
+    spec:
+      type: NodePort
+      ports:
+      - containerPort: 3306
         name: mysql
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-pass
-              key: password
-        ports:
-        - containerPort: 3306
-          name: mysql
-        volumeMounts:
-        - name: mysql-persistent-storage
-          mountPath: /var/lib/mysql
-      volumes:
-      - name: mysql-persistent-storage
-        persistentVolumeClaim:
-          claimName: mysql-pv-claim
+---
+apiVersion: kubedb.com/v1alpha1
+kind: Snapshot
+metadata:
+  name: local-snapshot
+  labels:
+    kubedb.com/kind: wp-sql
+spec:
+  databaseName: test
+  local:
+    mountPath: /tmp
+    persistentVolumeClaim:
+      claimName: my-snap-pvc
+---

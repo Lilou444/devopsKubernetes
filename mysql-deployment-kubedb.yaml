@@ -1,3 +1,10 @@
+apiVersion: storage.k8s.io/v1beta1
+kind: StorageClass
+metadata:
+  name: mysql-storage
+provisioner: kubernetes.io/glusterfs
+
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -6,6 +13,7 @@ metadata:
   labels:
     app: wordpress
 spec:
+  storageClassName: mysql-storage
   accessModes:
     - ReadWriteOnce
   resources:
@@ -17,7 +25,7 @@ apiVersion: kubedb.com/v1alpha1
 kind: MySQL
 metadata:
  name: wp-sql
- namespace: backend
+ namespace: mysqlback
  labels:
   app: wordpress
 context:
@@ -31,7 +39,7 @@ spec:
     secretName: m1-auth
   storageType: "Durable"
   storage:
-   storageClassName: "standard"
+   storageClassName: mysql-storage
    accessModes:
    - ReadWriteOnce
    volumeMode: Filesystem
